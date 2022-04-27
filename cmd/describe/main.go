@@ -40,7 +40,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	machine, err := bmc.Dial(ctx, *argBMCAddr)
+	machine, err := bmc.DialV2(*argBMCAddr)
 	if err != nil {
 		log.Print(err)
 		return
@@ -72,10 +72,21 @@ func main() {
 		printSystemGUID(guid)
 	}
 
-	sess, err := machine.NewSession(ctx, &bmc.SessionOpts{
-		Username:          *flgUsername,
-		Password:          []byte(*flgPassword),
-		MaxPrivilegeLevel: ipmi.PrivilegeLevelUser,
+	sess, err := machine.NewV2Session(ctx, &bmc.V2SessionOpts{
+		SessionOpts: bmc.SessionOpts{
+			Username:          *flgUsername,
+			Password:          []byte(*flgPassword),
+			MaxPrivilegeLevel: ipmi.PrivilegeLevelUser,
+		},
+		AuthenticationAlgorithms: []ipmi.AuthenticationAlgorithm{
+			ipmi.AuthenticationAlgorithmHMACSHA256,
+		},
+		IntegrityAlgorithms: []ipmi.IntegrityAlgorithm{
+			ipmi.IntegrityAlgorithmHMACSHA256128,
+		},
+		ConfidentialityAlgorithms: []ipmi.ConfidentialityAlgorithm{
+			ipmi.ConfidentialityAlgorithmAESCBC128,
+		},
 	})
 	if err != nil {
 		log.Print(err)
